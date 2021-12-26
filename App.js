@@ -25,8 +25,8 @@ const STORAGE_KEY = "@toDos";
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
+  const [edittext, setEditText] = useState("");
   const [toDos, setToDos] = useState({});
-  const [isComplete, setComplete] = useState(false);
   useEffect(() => {
     loadToDos();
   }, []);
@@ -52,7 +52,10 @@ export default function App() {
     /* const newToDos = Object.assign({}, toDos, {
       [Date.now()]: { text, work: working },
     }); 이것도 알아두삼!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-    const newToDos = { ...toDos, [Date.now()]: { text, working, isComplete } }; //위에꺼랑 똑같은 내용
+    const newToDos = {
+      ...toDos,
+      [Date.now()]: { text, working, isComplete: false, editable: false },
+    }; //위에꺼랑 똑같은 내용
     setToDos(newToDos);
     await saveToDos(newToDos);
     setText("");
@@ -72,12 +75,21 @@ export default function App() {
       },
     ]);
   };
-  const editToDo = (key) => {};
+  const editToDo = (key) => {
+    const newToDos = { ...toDos };
+    if (newToDos[key].editable === true) {
+      newToDos[key].editable = false;
+      newToDos[key].text = edittext;
+    } else {
+      newToDos[key].editable = true;
+    }
+    setToDos(newToDos);
+    saveToDos(newToDos);
+  };
   const completeToDo = async (key) => {
-    console.log(toDos[key].isComplete);
     const newToDos = { ...toDos };
     newToDos[key].isComplete = true;
-    setComplete(newToDos);
+    setToDos(newToDos);
     saveToDos(newToDos);
   };
   return (
@@ -120,7 +132,7 @@ export default function App() {
             ) =>
               toDos[key].working === working ? (
                 <View style={styles.toDo} key={key}>
-                  <Text
+                  <TextInput
                     style={{
                       ...styles.toDoText,
                       textDecorationLine:
@@ -128,9 +140,11 @@ export default function App() {
                           ? "line-through"
                           : "none",
                     }}
+                    onChangeText={(edittext) => setEditText(edittext)}
+                    editable={toDos[key].editable}
                   >
                     {toDos[key].text}
-                  </Text>
+                  </TextInput>
                   <View style={styles.btnView}>
                     <TouchableOpacity onPress={() => completeToDo(key)}>
                       <AntDesign name="checkcircle" size={18} color="black" />
