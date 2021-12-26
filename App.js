@@ -14,11 +14,19 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "./colors";
 import { Fontisto } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
+import { textDecorationColor } from "react-native/Libraries/Components/View/ReactNativeStyleAttributes";
+//challenge 1 : 마지막 작업한 탭으로 복원
+//challenge 2 : ToDo니깐 완료한 작업 표시 - 완료 버튼도 추가
+//challenge 3 : 수정 버튼 추가해서 텍스트 수정할 수 있게 하는것
+
 const STORAGE_KEY = "@toDos";
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
   const [toDos, setToDos] = useState({});
+  const [isComplete, setComplete] = useState(false);
   useEffect(() => {
     loadToDos();
   }, []);
@@ -27,21 +35,24 @@ export default function App() {
   const onChangeText = (payload) => setText(payload);
   const saveToDos = async (toSave) => {
     try {
+      await AsyncStorage.setItem("@State", JSON.stringify(working));
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (e) {}
   };
   const loadToDos = async () => {
     const s = await AsyncStorage.getItem(STORAGE_KEY);
+    const d = await AsyncStorage.getItem("@State");
     setToDos(JSON.parse(s)); //Object로 변환
+    setWorking(d === "true" ? true : false);
   };
   const addToDo = async () => {
     if (text === "") {
       return;
     }
     /* const newToDos = Object.assign({}, toDos, {
-      [Date.nnow()]: { text, work: working },
+      [Date.now()]: { text, work: working },
     }); 이것도 알아두삼!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-    const newToDos = { ...toDos, [Date.now()]: { text, working } }; //위에꺼랑 똑같은 내용
+    const newToDos = { ...toDos, [Date.now()]: { text, working, isComplete } }; //위에꺼랑 똑같은 내용
     setToDos(newToDos);
     await saveToDos(newToDos);
     setText("");
@@ -60,6 +71,11 @@ export default function App() {
         },
       },
     ]);
+  };
+  const editToDo = (key) => {};
+  const completeToDo = (key) => {
+    console.log(toDos[key].isComplete);
+    toDos[key].isComplete = true;
   };
   return (
     <View style={styles.container}>
@@ -95,15 +111,36 @@ export default function App() {
       />
       <ScrollView>
         {toDos && //Ios의 경우 toDos가 아예 없는 경우에는 Render 오류가 발생함. 따라서 toDos가 존재하는지 먼저 검사
-          Object.keys(toDos).map((key) =>
-            toDos[key].working === working ? (
-              <View style={styles.toDo} key={key}>
-                <Text style={styles.toDoText}>{toDos[key].text}</Text>
-                <TouchableOpacity onPress={() => deleteToDo(key)}>
-                  <Fontisto name="trash" size={18} color={theme.grey} />
-                </TouchableOpacity>
-              </View>
-            ) : null
+          Object.keys(toDos).map(
+            (
+              key //toDos.map 못하는 이유는 Object 형식이라서.
+            ) =>
+              toDos[key].working === working ? (
+                <View style={styles.toDo} key={key}>
+                  <Text
+                    style={{
+                      ...styles.toDoText,
+                      textDecorationLine:
+                        toDos[key].isComplete === true
+                          ? "line-through"
+                          : "none",
+                    }}
+                  >
+                    {toDos[key].text}
+                  </Text>
+                  <View style={styles.btnView}>
+                    <TouchableOpacity onPress={() => completeToDo(key)}>
+                      <AntDesign name="checkcircle" size={18} color="black" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => editToDo(key)}>
+                      <Feather name="edit" size={18} color="black" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteToDo(key)}>
+                      <Fontisto name="trash" size={18} color={theme.grey} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null
           )}
       </ScrollView>
     </View>
@@ -125,6 +162,12 @@ const styles = StyleSheet.create({
     fontSize: 38,
     fontWeight: "600",
   },
+  btnView: {
+    flex: 1,
+    flexDirection: "row",
+    alignContent: "center",
+    justifyContent: "space-between",
+  },
   input: {
     backgroundColor: "white",
     paddingVertical: 15,
@@ -134,6 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   toDo: {
+    flex: 1,
     backgroundColor: theme.toToBg,
     marginBottom: 10,
     paddingVertical: 20,
@@ -144,6 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   toDoText: {
+    flex: 3,
     color: "white",
     fontSize: 16,
     fontWeight: "500",
