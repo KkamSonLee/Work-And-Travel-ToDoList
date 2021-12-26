@@ -73,9 +73,12 @@ export default function App() {
     ]);
   };
   const editToDo = (key) => {};
-  const completeToDo = (key) => {
+  const completeToDo = async (key) => {
     console.log(toDos[key].isComplete);
-    toDos[key].isComplete = true;
+    const newToDos = { ...toDos };
+    newToDos[key].isComplete = true;
+    setComplete(newToDos);
+    saveToDos(newToDos);
   };
   return (
     <View style={styles.container}>
